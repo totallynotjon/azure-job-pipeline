@@ -2,4 +2,5 @@
 resource "azurerm_resource_group" "main" {
   name     = "rg-azure-job-pipeline"
   location = var.location
+  tags = var.default_project_tags
 }
