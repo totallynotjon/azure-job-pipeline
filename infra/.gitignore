@@ -1,0 +1,14 @@
+# Terraform downloaded provider binaries — large, machine-specific
+.terraform/
+
+# State files — contain sensitive resource data, stored in Azure Blob instead
+*.tfstate
+*.tfstate.backup
+
+# Variable files — may contain secrets
+*.tfvars
+*.tfvars.json
+
+# Crash logs
+crash.log
+crash.*.log
