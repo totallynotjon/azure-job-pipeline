@@ -1,3 +1,8 @@
+resource "time_sleep" "wait_rbac" {
+  depends_on      = [azurerm_role_assignment.terraform_blob_access]
+  create_duration = "60s"
+}
+
 resource "azurerm_storage_account" "main" {
   name                            = "stjonjobpipeline"
   resource_group_name             = azurerm_resource_group.main.name
@@ -16,4 +21,5 @@ resource "azurerm_storage_container" "raw_jobs" {
   name                  = "raw-jobs"
   storage_account_id    = azurerm_storage_account.main.id
   container_access_type = "private"
+  depends_on            = [time_sleep.wait_rbac]
 }
