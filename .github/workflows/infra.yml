@@ -8,7 +8,14 @@ on:
     branches: [main]
     paths: ["infra/**", ".github/workflows/infra.yml"]
   workflow_dispatch:
-    
+    inputs:
+      action:
+        description: "plan or apply"
+        type: choice
+        options:
+          - plan
+          - apply
+        default: plan
 
 permissions:
   id-token: write
@@ -23,10 +30,26 @@ env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      action: ${{ steps.decide.outputs.action }}
+    steps:
+      - id: decide
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then                                                          
+            echo "action=plan" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "push" ]; then                                                                
+            echo "action=apply" >> "$GITHUB_OUTPUT"                                                                         
+          else                                                                                                            
+            echo "action=${{ inputs.action }}" >> "$GITHUB_OUTPUT"                                                          
+          fi
+
   plan:
+    needs: setup
     name: Terraform Plan
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: needs.setup.outputs.action == 'plan'
 
     steps:
       - uses: actions/checkout@v4
@@ -38,7 +61,8 @@ jobs:
   apply:
     name: Terraform Apply
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: setup
+    if: needs.setup.outputs.action == 'apply'
 
     steps:
       - uses: actions/checkout@v4
@@ -47,4 +71,3 @@ jobs:
         with:
           path: infra
           auto_approve: true
-        
