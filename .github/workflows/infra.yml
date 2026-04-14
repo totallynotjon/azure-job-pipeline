@@ -7,6 +7,8 @@ on:
   pull_request:
     branches: [main]
     paths: ["infra/**", ".github/workflows/infra.yml"]
+  workflow_dispatch:
+    
 
 permissions:
   id-token: write
@@ -36,7 +38,7 @@ jobs:
   apply:
     name: Terraform Apply
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
     steps:
       - uses: actions/checkout@v4
@@ -44,3 +46,5 @@ jobs:
       - uses: dflook/terraform-apply@v1
         with:
           path: infra
+          auto_approve: true
+        
