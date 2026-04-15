@@ -40,7 +40,6 @@ jobs:
           filters: |
             infra:
               - 'infra/**'
-              - '.github/workflows/infra.yml'
 
   setup:
     runs-on: ubuntu-latest
