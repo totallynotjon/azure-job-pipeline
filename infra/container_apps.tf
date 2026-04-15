@@ -3,6 +3,7 @@ resource "azurerm_container_app_environment" "main" {
   location                   = azurerm_resource_group.main.location
   resource_group_name        = azurerm_resource_group.main.name
   log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
+  depends_on                 = [azurerm_resource_provider_registration.app]
 
   tags = var.default_project_tags
 }

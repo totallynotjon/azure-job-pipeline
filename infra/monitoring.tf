@@ -5,6 +5,7 @@ resource "azurerm_log_analytics_workspace" "main" {
   sku                 = "PerGB2018"
   retention_in_days   = 30
   daily_quota_gb      = 0.1
+  depends_on          = [azurerm_resource_provider_registration.operational_insights]
 
   tags = var.default_project_tags
 }
