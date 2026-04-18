@@ -13,4 +13,6 @@ resource "azurerm_key_vault" "main" {
   rbac_authorization_enabled = true
   soft_delete_retention_days = 7
   purge_protection_enabled   = false
+  
+  tags = var.default_project_tags
 }
