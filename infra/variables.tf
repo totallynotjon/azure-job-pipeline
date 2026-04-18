@@ -9,7 +9,7 @@ variable "location" {
 variable "default_project_tags" {
   type        = map(string)
   description = "Default project tags to add to all resources"
-  default     = {
+  default = {
     project = "azure-job-pipeline"
   }
 }
