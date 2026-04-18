@@ -24,6 +24,13 @@ resource "azurerm_storage_container" "raw_jobs" {
   depends_on            = [time_sleep.wait_rbac]
 }
 
+resource "azurerm_storage_container" "eventgrid_deadletter" {
+  name                  = "eg-deadletter"
+  storage_account_id    = azurerm_storage_account.main.id
+  container_access_type = "private"
+  depends_on            = [time_sleep.wait_rbac]
+}
+
 resource "azurerm_storage_account" "functions" {
   name                            = "stjonjobpipelinefn"
   resource_group_name             = azurerm_resource_group.main.name
