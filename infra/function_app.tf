@@ -28,13 +28,14 @@ resource "azurerm_linux_function_app" "ingest" {
   }
 
   app_settings = {
-    "FUNCTIONS_WORKER_RUNTIME" = "node"
-    "ADZUNA_APP_ID"            = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=adzuna-id)"
-    "ADZUNA_APP_KEY"           = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=adzuna-key)"
-    "RAW_JOBS_STORAGE_ACCOUNT" = azurerm_storage_account.main.name
-    "RAW_JOBS_CONTAINER"       = azurerm_storage_container.raw_jobs.name
-    "ADZUNA_COUNTRY"           = "us"
-    "ADZUNA_SEARCHES"          = jsonencode([
+    "FUNCTIONS_WORKER_RUNTIME"              = "node"
+    "APPLICATIONINSIGHTS_CONNECTION_STRING" = azurerm_application_insights.main.connection_string
+    "ADZUNA_APP_ID"                         = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=adzuna-id)"
+    "ADZUNA_APP_KEY"                        = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=adzuna-key)"
+    "RAW_JOBS_STORAGE_ACCOUNT"              = azurerm_storage_account.main.name
+    "RAW_JOBS_CONTAINER"                    = azurerm_storage_container.raw_jobs.name
+    "ADZUNA_COUNTRY"                        = "us"
+    "ADZUNA_SEARCHES" = jsonencode([
       { id = "remote", what = "devops engineer remote", where = "", maxDaysOld = 7 },
       { id = "louisville", what = "devops engineer", where = "louisville, ky", maxDaysOld = 7 },
     ])
