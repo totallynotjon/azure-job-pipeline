@@ -1,0 +1,7 @@
+*.ts
+src/
+tsconfig.json
+.gitignore
+.git
+local.settings.json
+*.map
