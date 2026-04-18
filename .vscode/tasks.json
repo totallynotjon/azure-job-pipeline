@@ -1,0 +1,90 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "npm install",
+      "type": "shell",
+      "command": "npm install",
+      "options": {
+        "cwd": "${workspaceFolder}/functions/fn-ingest-jobs"
+      },
+      "presentation": { "reveal": "silent", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "npm build",
+      "type": "shell",
+      "command": "npm run build",
+      "options": {
+        "cwd": "${workspaceFolder}/functions/fn-ingest-jobs"
+      },
+      "presentation": { "reveal": "silent", "panel": "dedicated" },
+      "problemMatcher": "$tsc"
+    },
+    {
+      "label": "npm watch",
+      "type": "shell",
+      "command": "npm run watch",
+      "options": {
+        "cwd": "${workspaceFolder}/functions/fn-ingest-jobs"
+      },
+      "isBackground": true,
+      "presentation": { "reveal": "silent", "panel": "dedicated" },
+      "problemMatcher": "$tsc-watch"
+    },
+    {
+      "label": "azurite: start",
+      "type": "shell",
+      "command": "azurite --silent --location /tmp/azurite",
+      "isBackground": true,
+      "presentation": { "reveal": "silent", "panel": "dedicated" },
+      "problemMatcher": {
+        "pattern": [{ "regexp": ".", "file": 1, "location": 2, "message": 3 }],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Azurite",
+          "endsPattern": "Listening"
+        }
+      }
+    },
+    {
+      "type": "func",
+      "label": "func: host start",
+      "command": "host start",
+      "problemMatcher": "$func-node-watch",
+      "isBackground": true,
+      "dependsOn": "npm build",
+      "options": {
+        "cwd": "${workspaceFolder}/functions/fn-ingest-jobs",
+        "env": {
+          "languageWorkers__node__arguments": "--inspect=9229"
+        }
+      }
+    },
+    {
+      "type": "func",
+      "label": "func: host start (no build)",
+      "command": "host start",
+      "problemMatcher": "$func-node-watch",
+      "isBackground": true,
+      "options": {
+        "cwd": "${workspaceFolder}/functions/fn-ingest-jobs",
+        "env": {
+          "languageWorkers__node__arguments": "--inspect=9229"
+        }
+      }
+    },
+    {
+      "label": "dev: watch+run",
+      "dependsOrder": "parallel",
+      "dependsOn": ["npm watch", "func: host start (no build)"],
+      "problemMatcher": []
+    },
+    {
+      "label": "dev: start all",
+      "dependsOrder": "sequence",
+      "dependsOn": ["npm build", "dev: watch+run"],
+      "problemMatcher": []
+    }
+  ]
+}
