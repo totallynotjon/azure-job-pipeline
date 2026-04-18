@@ -3,3 +3,15 @@ resource "azurerm_role_assignment" "terraform_blob_access" {
   role_definition_name = "Storage Blob Data Contributor"
   principal_id         = data.azurerm_client_config.current.object_id
 }
+
+resource "azurerm_role_assignment" "fn_ingest_blob_write" {
+  scope                = azurerm_storage_account.main.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azurerm_linux_function_app.ingest.identity[0].principal_id
+}
+
+resource "azurerm_role_assignment" "fn_ingest_kv_read" {
+  scope                = azurerm_key_vault.main.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_linux_function_app.ingest.identity[0].principal_id
+}
