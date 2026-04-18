@@ -20,6 +20,12 @@ variable "alert_contact_email" {
   sensitive   = true
 }
 
+variable "sql_location" {
+  type        = string
+  description = "Region for SQL server. Separate from var.location to work around regional provisioning restrictions on new subscriptions."
+  default     = "eastus2"
+}
+
 variable "sql_admin_login" {
   type        = string
   description = "Entra UPN set as SQL server admin. Passed via TF_VAR_sql_admin_login (GH secret SQL_ADMIN_LOGIN)."
