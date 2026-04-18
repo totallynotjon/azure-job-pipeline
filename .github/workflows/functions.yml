@@ -1,0 +1,67 @@
+name: Functions Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'functions/**'
+      - '.github/workflows/functions.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Build and deploy fn-ingest-jobs
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: functions/fn-ingest-jobs
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: functions/fn-ingest-jobs/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Prune dev dependencies
+        run: npm prune --production
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Resolve Function App name
+        id: appname
+        run: |
+          name=$(az functionapp list \
+            --resource-group rg-azure-job-pipeline \
+            --query "[?starts_with(name, 'fn-ingest-jobs-')].name | [0]" \
+            -o tsv)
+          if [ -z "$name" ]; then
+            echo "No Function App matching fn-ingest-jobs-* found in rg-azure-job-pipeline" >&2
+            exit 1
+          fi
+          echo "Resolved Function App name: $name"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy to Azure Functions
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ steps.appname.outputs.name }}
+          package: functions/fn-ingest-jobs
