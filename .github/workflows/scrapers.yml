@@ -1,0 +1,82 @@
+name: Scraper Image
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  ACR_NAME: acrjonjobpipeline
+  IMAGE_NAME: fn-scrape-jobs
+
+jobs:
+  check-scraper-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      scrapers: ${{ steps.filter.outputs.scrapers }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            scrapers:
+              - 'scrapers/**'
+              - '.github/workflows/scrapers.yml'
+
+  build:
+    name: Build ${{ github.event_name == 'pull_request' && '(validate)' || '(push)' }}
+    needs: check-scraper-changes
+    runs-on: ubuntu-latest
+    if: needs.check-scraper-changes.outputs.scrapers == 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: ACR login
+        run: az acr login --name "$ACR_NAME"
+
+      - name: Compute image tags
+        id: tags
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          LOGIN_SERVER="${ACR_NAME}.azurecr.io"
+          echo "sha_tag=${LOGIN_SERVER}/${IMAGE_NAME}:${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "latest_tag=${LOGIN_SERVER}/${IMAGE_NAME}:latest" >> "$GITHUB_OUTPUT"
+
+      - name: Build image
+        working-directory: scrapers/fn-scrape-jobs
+        run: |
+          docker build \
+            -t "${{ steps.tags.outputs.sha_tag }}" \
+            -t "${{ steps.tags.outputs.latest_tag }}" \
+            .
+
+      - name: Push image
+        if: github.event_name == 'push'
+        run: |
+          docker push "${{ steps.tags.outputs.sha_tag }}"
+          docker push "${{ steps.tags.outputs.latest_tag }}"
+
+  scraper-status:
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          if [[ "${{ needs.build.result }}" == "failure" ]]; then
+            exit 1
+          fi
