@@ -1,0 +1,42 @@
+{
+  "azureFunctions.projectSubpath": "functions/fn-ingest-jobs",
+  "azureFunctions.deploySubpath": "functions/fn-ingest-jobs",
+  "azureFunctions.projectLanguage": "TypeScript",
+  "azureFunctions.projectRuntime": "~4",
+  "azureFunctions.projectLanguageModel": 4,
+  "azureFunctions.preDeployTask": "npm build",
+  "azureFunctions.scmDoBuildDuringDeployment": false,
+  "azureFunctions.coreToolsExecutablePath": "${env:HOME}/.local/bin/func",
+
+  "terminal.integrated.env.linux": {
+    "PATH": "${env:HOME}/.local/bin:${env:PATH}"
+  },
+
+  "azurite.location": "/tmp/azurite",
+  "azurite.silent": true,
+
+  "debug.internalConsoleOptions": "neverOpen",
+
+  "files.exclude": {
+    "**/.terraform": true,
+    "**/node_modules": true,
+    "**/dist": true
+  },
+
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  "terraform.experimentalFeatures.prefillRequiredFields": true
+}

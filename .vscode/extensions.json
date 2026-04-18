@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "ms-azuretools.vscode-azurefunctions",
+    "ms-azuretools.vscode-azureresourcegroups",
+    "ms-azuretools.vscode-azurestorage",
+    "Azurite.azurite",
+    "hashicorp.terraform",
+    "github.vscode-github-actions",
+    "esbenp.prettier-vscode"
+  ]
+}
