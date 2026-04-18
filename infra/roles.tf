@@ -15,3 +15,9 @@ resource "azurerm_role_assignment" "fn_ingest_kv_read" {
   role_definition_name = "Key Vault Secrets User"
   principal_id         = azurerm_linux_function_app.ingest.identity[0].principal_id
 }
+
+resource "azurerm_role_assignment" "eg_raw_jobs_deadletter_write" {
+  scope                = azurerm_storage_container.eventgrid_deadletter.resource_manager_id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azurerm_eventgrid_system_topic.raw_jobs.identity[0].principal_id
+}
