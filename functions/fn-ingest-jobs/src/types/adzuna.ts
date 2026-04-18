@@ -39,5 +39,5 @@ export interface AdzunaJobSearchResults {
   __CLASS__: "Adzuna::API::Response::JobSearchResults";
   count: number;
   mean?: number;
-  results: AdzunaJob[];
+  results?: AdzunaJob[];
 }

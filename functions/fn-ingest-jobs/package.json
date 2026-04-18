@@ -2,7 +2,7 @@
   "name": "fn-ingest-jobs",
   "version": "1.0.0",
   "description": "Timer-triggered Azure Function that ingests jobs from Adzuna and writes raw JSON to blob storage.",
-  "main": "dist/src/functions/*.js",
+  "main": "dist/functions/*.js",
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",

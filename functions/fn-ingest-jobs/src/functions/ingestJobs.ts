@@ -1,62 +1,27 @@
 import { app, InvocationContext, Timer } from "@azure/functions";
 import { DefaultAzureCredential } from "@azure/identity";
-import { BlobServiceClient } from "@azure/storage-blob";
-import { AdzunaJobSearchResults } from "../types/adzuna";
+import {
+  BlobServiceClient,
+  ContainerClient,
+  RestError,
+} from "@azure/storage-blob";
+import { fetchAdzunaWithRetry } from "../adzuna";
+import { IngestConfig, SearchConfig, readConfig } from "../config";
 
-interface SearchConfig {
-  id: string;
-  what: string;
-  where: string;
-  maxDaysOld?: number;
-}
+const credential = new DefaultAzureCredential();
+let cachedBlobServiceClient: BlobServiceClient | undefined;
 
-function readConfig() {
-  const appId = process.env.ADZUNA_APP_ID;
-  const appKey = process.env.ADZUNA_APP_KEY;
-  const country = process.env.ADZUNA_COUNTRY ?? "us";
-  const searchesRaw = process.env.ADZUNA_SEARCHES;
-  const storageAccount = process.env.RAW_JOBS_STORAGE_ACCOUNT;
-  const container = process.env.RAW_JOBS_CONTAINER;
-
-  if (!appId || !appKey) {
-    throw new Error("ADZUNA_APP_ID and ADZUNA_APP_KEY must be set");
-  }
-  if (!searchesRaw) {
-    throw new Error("ADZUNA_SEARCHES must be set (JSON array)");
-  }
-  if (!storageAccount || !container) {
-    throw new Error(
-      "RAW_JOBS_STORAGE_ACCOUNT and RAW_JOBS_CONTAINER must be set",
+function getContainerClient(
+  storageAccount: string,
+  container: string,
+): ContainerClient {
+  if (!cachedBlobServiceClient) {
+    cachedBlobServiceClient = new BlobServiceClient(
+      `https://${storageAccount}.blob.core.windows.net`,
+      credential,
     );
   }
-
-  const searches: SearchConfig[] = JSON.parse(searchesRaw);
-
-  return { appId, appKey, country, searches, storageAccount, container };
-}
-
-async function fetchAdzuna(
-  appId: string,
-  appKey: string,
-  country: string,
-  search: SearchConfig,
-): Promise<AdzunaJobSearchResults> {
-  const url = new URL(`https://api.adzuna.com/v1/api/jobs/${country}/search/1`);
-  url.searchParams.set("app_id", appId);
-  url.searchParams.set("app_key", appKey);
-  url.searchParams.set("what", search.what);
-  if (search.where) url.searchParams.set("where", search.where);
-  url.searchParams.set("results_per_page", "50");
-  url.searchParams.set("max_days_old", String(search.maxDaysOld ?? 1));
-
-  const response = await fetch(url);
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(
-      `Adzuna ${search.id} failed: ${response.status} ${response.statusText} — ${body}`,
-    );
-  }
-  return (await response.json()) as AdzunaJobSearchResults;
+  return cachedBlobServiceClient.getContainerClient(container);
 }
 
 function buildBlobPath(searchId: string, runId: string): string {
@@ -67,48 +32,105 @@ function buildBlobPath(searchId: string, runId: string): string {
   return `adzuna/${searchId}/${yyyy}/${mm}/${dd}/${runId}.json`;
 }
 
-export async function ingestJobs(
-  _myTimer: Timer,
+async function processSearch(
   context: InvocationContext,
+  containerClient: ContainerClient,
+  cfg: IngestConfig,
+  search: SearchConfig,
+  runId: string,
 ): Promise<void> {
-  const cfg = readConfig();
-
-  const credential = new DefaultAzureCredential();
-  const blobServiceClient = new BlobServiceClient(
-    `https://${cfg.storageAccount}.blob.core.windows.net`,
-    credential,
+  const started = Date.now();
+  const data = await fetchAdzunaWithRetry(
+    { appId: cfg.appId, appKey: cfg.appKey, country: cfg.country },
+    search,
+    (info) =>
+      context.warn("Adzuna retry", { searchId: search.id, ...info }),
   );
-  const containerClient = blobServiceClient.getContainerClient(cfg.container);
+  const results = data.results ?? [];
 
-  const runId = new Date().toISOString().replace(/[:.]/g, "-");
+  const blobPath = buildBlobPath(search.id, runId);
+  const blobClient = containerClient.getBlockBlobClient(blobPath);
+  const body = JSON.stringify(data);
 
-  for (const search of cfg.searches) {
-    const started = Date.now();
-    const data = await fetchAdzuna(cfg.appId, cfg.appKey, cfg.country, search);
-
-    const blobPath = buildBlobPath(search.id, runId);
-    const body = JSON.stringify(data);
-    const blobClient = containerClient.getBlockBlobClient(blobPath);
+  try {
     await blobClient.uploadData(Buffer.from(body), {
       blobHTTPHeaders: { blobContentType: "application/json" },
       metadata: {
         source: "adzuna",
         searchid: search.id,
-        what: search.what,
-        where: search.where,
         count: String(data.count ?? 0),
         ingestedat: new Date().toISOString(),
       },
+      conditions: { ifNoneMatch: "*" },
     });
-
-    context.log("Ingested Adzuna search", {
-      searchId: search.id,
-      resultCount: data.results.length,
-      totalCount: data.count,
-      blobPath,
-      durationMs: Date.now() - started,
-    });
+  } catch (err) {
+    if (err instanceof RestError && err.statusCode === 409) {
+      throw new Error(
+        `blob ${blobPath} already exists (concurrent run or clock skew)`,
+      );
+    }
+    throw err;
   }
+
+  context.log("Ingested Adzuna search", {
+    searchId: search.id,
+    resultCount: results.length,
+    totalCount: data.count,
+    blobPath,
+    durationMs: Date.now() - started,
+  });
+}
+
+export async function ingestJobs(
+  _myTimer: Timer,
+  context: InvocationContext,
+): Promise<void> {
+  const cfg = readConfig();
+  const containerClient = getContainerClient(cfg.storageAccount, cfg.container);
+  const runId = new Date().toISOString().replace(/[:.]/g, "-");
+
+  context.log("ingestJobs run started", {
+    runId,
+    searchCount: cfg.searches.length,
+    country: cfg.country,
+  });
+
+  const outcomes = await Promise.allSettled(
+    cfg.searches.map((search) =>
+      processSearch(context, containerClient, cfg, search, runId),
+    ),
+  );
+
+  const failures = outcomes.flatMap((outcome, idx) => {
+    if (outcome.status === "rejected") {
+      const searchId = cfg.searches[idx].id;
+      const message =
+        outcome.reason instanceof Error
+          ? outcome.reason.message
+          : String(outcome.reason);
+      context.error("Adzuna search failed", { searchId, error: message });
+      return [{ searchId, error: message }];
+    }
+    return [];
+  });
+
+  if (failures.length === cfg.searches.length) {
+    throw new Error(
+      `All ${failures.length} Adzuna searches failed: ${JSON.stringify(failures)}`,
+    );
+  }
+  if (failures.length > 0) {
+    context.warn("ingestJobs completed with partial failures", {
+      runId,
+      failureCount: failures.length,
+      successCount: cfg.searches.length - failures.length,
+    });
+    return;
+  }
+  context.log("ingestJobs run completed", {
+    runId,
+    successCount: cfg.searches.length,
+  });
 }
 
 app.timer("ingestJobs", {
