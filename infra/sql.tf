@@ -27,7 +27,7 @@ resource "azurerm_mssql_database" "main" {
   server_id                   = azurerm_mssql_server.main.id
   sku_name                    = "GP_S_Gen5_1"
   min_capacity                = 0.5
-  auto_pause_delay_in_minutes = 60
+  auto_pause_delay_in_minutes = 15
   max_size_gb                 = 2
   collation                   = "SQL_Latin1_General_CP1_CI_AS"
   zone_redundant              = false
