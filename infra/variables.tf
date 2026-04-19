@@ -23,7 +23,7 @@ variable "alert_contact_email" {
 variable "sql_location" {
   type        = string
   description = "Region for SQL server. Separate from var.location to work around regional provisioning restrictions on new subscriptions."
-  default     = "eastus2"
+  default     = "centralus"
 }
 
 variable "sql_admin_login" {
