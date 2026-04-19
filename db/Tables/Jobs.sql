@@ -1,0 +1,21 @@
+CREATE TABLE [dbo].[Jobs] (
+    [Source]            NVARCHAR(50)   NOT NULL,
+    [SourceJobId]       NVARCHAR(200)  NOT NULL,
+    [JobUrl]            NVARCHAR(2048) NOT NULL,
+    [Title]             NVARCHAR(500)  NOT NULL,
+    [CompanyName]       NVARCHAR(500)  NULL,
+    [LocationDisplay]   NVARCHAR(500)  NULL,
+    [Latitude]          DECIMAL(9,6)   NULL,
+    [Longitude]         DECIMAL(9,6)   NULL,
+    [ContractType]      NVARCHAR(50)   NULL,
+    [CategoryTag]       NVARCHAR(100)  NULL,
+    [CategoryLabel]     NVARCHAR(200)  NULL,
+    [SalaryMin]         DECIMAL(18,2)  NULL,
+    [SalaryMax]         DECIMAL(18,2)  NULL,
+    [SalaryIsPredicted] BIT            NULL,
+    [Description]       NVARCHAR(MAX)  NULL,
+    [PostedAt]          DATETIME2(0)   NULL,
+    [SourceBlobPath]    NVARCHAR(500)  NOT NULL,
+    [IngestedAt]        DATETIME2(3)   NOT NULL CONSTRAINT [DF_Jobs_IngestedAt] DEFAULT (SYSUTCDATETIME()),
+    CONSTRAINT [PK_Jobs] PRIMARY KEY CLUSTERED ([Source], [SourceJobId])
+);

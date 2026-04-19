@@ -1,0 +1,110 @@
+name: SQL DACPAC
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "plan (DeployReport) or apply (Publish)"
+        type: choice
+        options:
+          - plan
+          - apply
+        default: plan
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-db-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      db: ${{ steps.filter.outputs.db }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            db:
+              - 'db/**'
+
+  decide-action:
+    runs-on: ubuntu-latest
+    outputs:
+      action: ${{ steps.decide.outputs.action }}
+    steps:
+      - id: decide
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "action=plan" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            echo "action=apply" >> "$GITHUB_OUTPUT"
+          else
+            echo "action=${{ inputs.action }}" >> "$GITHUB_OUTPUT"
+          fi
+
+  plan:
+    name: DACPAC Deploy Report
+    needs: [decide-action, check-db-changes]
+    runs-on: ubuntu-latest
+    if: needs.decide-action.outputs.action == 'plan' && needs.check-db-changes.outputs.db == 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - uses: azure/sql-action@v2
+        with:
+          connection-string: "Server=sql-jonsjobpipeline.database.windows.net;Database=sqldb-jobpipeline;Authentication=Active Directory Default;"
+          path: ./db/JobPipeline.sqlproj
+          action: 'DeployReport'
+
+  apply:
+    name: DACPAC Publish
+    needs: [decide-action, check-db-changes]
+    runs-on: ubuntu-latest
+    if: needs.decide-action.outputs.action == 'apply' && needs.check-db-changes.outputs.db == 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - uses: azure/sql-action@v2
+        with:
+          connection-string: "Server=sql-jonsjobpipeline.database.windows.net;Database=sqldb-jobpipeline;Authentication=Active Directory Default;"
+          path: ./db/JobPipeline.sqlproj
+          action: 'Publish'
+
+  sql-status:
+    needs: [plan, apply]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          if [[ "${{ needs.plan.result }}" == "failure" || "${{ needs.apply.result }}" == "failure" ]]; then
+            exit 1
+          fi
