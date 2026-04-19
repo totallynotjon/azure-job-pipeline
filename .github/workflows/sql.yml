@@ -109,6 +109,28 @@ jobs:
           cat ./deploy-script.sql
           echo "::endgroup::"
 
+      - name: Compose PR comment body
+        if: github.event_name == 'pull_request'
+        run: |
+          {
+            echo '## DACPAC Deploy Plan'
+            echo ''
+            echo 'T-SQL that would execute on apply to `sqldb-jobpipeline`:'
+            echo ''
+            echo '```sql'
+            cat ./deploy-script.sql
+            echo '```'
+            echo ''
+            echo "<sub>Commit \`${{ github.sha }}\` · [Run log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})</sub>"
+          } > ./pr-comment.md
+
+      - name: Post plan to PR
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: dacpac-plan
+          path: ./pr-comment.md
+
       - name: Remove runner IP from SQL firewall
         if: always() && steps.firewall.outputs.rule_name != ''
         run: |
