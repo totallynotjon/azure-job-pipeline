@@ -6,6 +6,9 @@
     "Azurite.azurite",
     "hashicorp.terraform",
     "github.vscode-github-actions",
+    "ms-python.python",
+    "ms-python.debugpy",
+    "charliermarsh.ruff",
     "esbenp.prettier-vscode"
   ]
 }
