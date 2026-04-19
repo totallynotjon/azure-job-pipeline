@@ -43,6 +43,7 @@ jobs:
           filters: |
             infra:
               - 'infra/**'
+              - '.github/workflows/infra.yml'
 
   decide-action:
     runs-on: ubuntu-latest
