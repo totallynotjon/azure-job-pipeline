@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: "plan (DeployReport) or apply (Publish)"
+        description: "plan (Script) or apply (Publish)"
         type: choice
         options:
           - plan
@@ -19,6 +19,12 @@ permissions:
   id-token: write
   contents: read
   pull-requests: write
+
+env:
+  SQL_SERVER: sql-jonsjobpipeline
+  SQL_DATABASE: sqldb-jobpipeline
+  SQL_RG: rg-azure-job-pipeline
+  DACPAC_PATH: ./db/bin/Release/JobPipeline.dacpac
 
 jobs:
   check-db-changes:
@@ -33,6 +39,7 @@ jobs:
           filters: |
             db:
               - 'db/**'
+              - '.github/workflows/sql.yml'
 
   decide-action:
     runs-on: ubuntu-latest
@@ -50,7 +57,7 @@ jobs:
           fi
 
   plan:
-    name: DACPAC Deploy Report
+    name: DACPAC Script (Plan)
     needs: [decide-action, check-db-changes]
     runs-on: ubuntu-latest
     if: needs.decide-action.outputs.action == 'plan' && needs.check-db-changes.outputs.db == 'true'
@@ -65,20 +72,54 @@ jobs:
       - name: Install SqlPackage CLI
         run: dotnet tool install -g Microsoft.SqlPackage
 
+      - name: Build DACPAC
+        run: dotnet build db/JobPipeline.sqlproj -c Release
+
       - uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - uses: azure/sql-action@v2
-        with:
-          connection-string: "Server=sql-jonsjobpipeline.database.windows.net;Database=sqldb-jobpipeline;Authentication=Active Directory Default;"
-          path: ./db/JobPipeline.sqlproj
-          action: 'DeployReport'
+      - name: Add runner IP to SQL firewall
+        id: firewall
+        run: |
+          RUNNER_IP=$(curl -fsS --retry 3 --retry-delay 2 https://api.ipify.org)
+          [[ "$RUNNER_IP" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid IP from ipify: $RUNNER_IP"; exit 1; }
+          RULE_NAME="gha-plan-${{ github.run_id }}-${{ github.run_attempt }}"
+          az sql server firewall-rule create \
+            --resource-group "$SQL_RG" \
+            --server "$SQL_SERVER" \
+            --name "$RULE_NAME" \
+            --start-ip-address "$RUNNER_IP" \
+            --end-ip-address "$RUNNER_IP" \
+            --output none
+          echo "rule_name=$RULE_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Generate deployment script
+        run: |
+          sqlpackage /Action:Script \
+            /SourceFile:"$DACPAC_PATH" \
+            /TargetConnectionString:"Server=${SQL_SERVER}.database.windows.net;Database=${SQL_DATABASE};Authentication=Active Directory Default;" \
+            /OutputPath:"./deploy-script.sql"
+
+      - name: Show deployment script
+        run: |
+          echo "::group::Deployment Script (T-SQL that would run on apply)"
+          cat ./deploy-script.sql
+          echo "::endgroup::"
+
+      - name: Remove runner IP from SQL firewall
+        if: always() && steps.firewall.outputs.rule_name != ''
+        run: |
+          az sql server firewall-rule delete \
+            --resource-group "$SQL_RG" \
+            --server "$SQL_SERVER" \
+            --name "${{ steps.firewall.outputs.rule_name }}" \
+            --output none
 
   apply:
-    name: DACPAC Publish
+    name: DACPAC Publish (Apply)
     needs: [decide-action, check-db-changes]
     runs-on: ubuntu-latest
     if: needs.decide-action.outputs.action == 'apply' && needs.check-db-changes.outputs.db == 'true'
@@ -93,17 +134,44 @@ jobs:
       - name: Install SqlPackage CLI
         run: dotnet tool install -g Microsoft.SqlPackage
 
+      - name: Build DACPAC
+        run: dotnet build db/JobPipeline.sqlproj -c Release
+
       - uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - uses: azure/sql-action@v2
-        with:
-          connection-string: "Server=sql-jonsjobpipeline.database.windows.net;Database=sqldb-jobpipeline;Authentication=Active Directory Default;"
-          path: ./db/JobPipeline.sqlproj
-          action: 'Publish'
+      - name: Add runner IP to SQL firewall
+        id: firewall
+        run: |
+          RUNNER_IP=$(curl -fsS --retry 3 --retry-delay 2 https://api.ipify.org)
+          [[ "$RUNNER_IP" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid IP from ipify: $RUNNER_IP"; exit 1; }
+          RULE_NAME="gha-apply-${{ github.run_id }}-${{ github.run_attempt }}"
+          az sql server firewall-rule create \
+            --resource-group "$SQL_RG" \
+            --server "$SQL_SERVER" \
+            --name "$RULE_NAME" \
+            --start-ip-address "$RUNNER_IP" \
+            --end-ip-address "$RUNNER_IP" \
+            --output none
+          echo "rule_name=$RULE_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Publish DACPAC
+        run: |
+          sqlpackage /Action:Publish \
+            /SourceFile:"$DACPAC_PATH" \
+            /TargetConnectionString:"Server=${SQL_SERVER}.database.windows.net;Database=${SQL_DATABASE};Authentication=Active Directory Default;"
+
+      - name: Remove runner IP from SQL firewall
+        if: always() && steps.firewall.outputs.rule_name != ''
+        run: |
+          az sql server firewall-rule delete \
+            --resource-group "$SQL_RG" \
+            --server "$SQL_SERVER" \
+            --name "${{ steps.firewall.outputs.rule_name }}" \
+            --output none
 
   sql-status:
     needs: [plan, apply]
