@@ -2,9 +2,9 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "npm install",
+      "label": "pip install",
       "type": "shell",
-      "command": "npm install",
+      "command": "${workspaceFolder}/functions/fn-ingest-jobs/.venv/bin/pip install -r requirements.txt",
       "options": {
         "cwd": "${workspaceFolder}/functions/fn-ingest-jobs"
       },
@@ -12,25 +12,24 @@
       "problemMatcher": []
     },
     {
-      "label": "npm build",
+      "label": "pip install (production)",
       "type": "shell",
-      "command": "npm run build",
+      "command": "${workspaceFolder}/functions/fn-ingest-jobs/.venv/bin/pip install --target=.python_packages/lib/site-packages -r requirements.txt",
       "options": {
         "cwd": "${workspaceFolder}/functions/fn-ingest-jobs"
       },
       "presentation": { "reveal": "silent", "panel": "dedicated" },
-      "problemMatcher": "$tsc"
+      "problemMatcher": []
     },
     {
-      "label": "npm watch",
+      "label": "create venv",
       "type": "shell",
-      "command": "npm run watch",
+      "command": "python3 -m venv .venv && .venv/bin/pip install -r requirements.txt",
       "options": {
         "cwd": "${workspaceFolder}/functions/fn-ingest-jobs"
       },
-      "isBackground": true,
-      "presentation": { "reveal": "silent", "panel": "dedicated" },
-      "problemMatcher": "$tsc-watch"
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
     },
     {
       "label": "azurite: start",
@@ -51,39 +50,27 @@
       "type": "func",
       "label": "func: host start",
       "command": "host start",
-      "problemMatcher": "$func-node-watch",
+      "problemMatcher": "$func-python-watch",
       "isBackground": true,
-      "dependsOn": "npm build",
+      "dependsOn": "pip install",
       "options": {
-        "cwd": "${workspaceFolder}/functions/fn-ingest-jobs",
-        "env": {
-          "languageWorkers__node__arguments": "--inspect=9229"
-        }
+        "cwd": "${workspaceFolder}/functions/fn-ingest-jobs"
       }
     },
     {
       "type": "func",
-      "label": "func: host start (no build)",
+      "label": "func: host start (no install)",
       "command": "host start",
-      "problemMatcher": "$func-node-watch",
+      "problemMatcher": "$func-python-watch",
       "isBackground": true,
       "options": {
-        "cwd": "${workspaceFolder}/functions/fn-ingest-jobs",
-        "env": {
-          "languageWorkers__node__arguments": "--inspect=9229"
-        }
+        "cwd": "${workspaceFolder}/functions/fn-ingest-jobs"
       }
-    },
-    {
-      "label": "dev: watch+run",
-      "dependsOrder": "parallel",
-      "dependsOn": ["npm watch", "func: host start (no build)"],
-      "problemMatcher": []
     },
     {
       "label": "dev: start all",
       "dependsOrder": "sequence",
-      "dependsOn": ["npm build", "dev: watch+run"],
+      "dependsOn": ["pip install", "func: host start (no install)"],
       "problemMatcher": []
     }
   ]

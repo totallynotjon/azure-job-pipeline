@@ -1,12 +1,13 @@
 {
   "azureFunctions.projectSubpath": "functions/fn-ingest-jobs",
   "azureFunctions.deploySubpath": "functions/fn-ingest-jobs",
-  "azureFunctions.projectLanguage": "TypeScript",
+  "azureFunctions.projectLanguage": "Python",
   "azureFunctions.projectRuntime": "~4",
-  "azureFunctions.projectLanguageModel": 4,
-  "azureFunctions.preDeployTask": "npm build",
+  "azureFunctions.projectLanguageModel": 2,
+  "azureFunctions.preDeployTask": "pip install (production)",
   "azureFunctions.scmDoBuildDuringDeployment": false,
   "azureFunctions.coreToolsExecutablePath": "${env:HOME}/.local/bin/func",
+  "azureFunctions.pythonVenv": ".venv",
 
   "terminal.integrated.env.linux": {
     "PATH": "${env:HOME}/.local/bin:${env:PATH}"
@@ -14,22 +15,25 @@
 
   "azurite.location": "/tmp/azurite",
   "azurite.silent": true,
-
   "debug.internalConsoleOptions": "neverOpen",
 
   "files.exclude": {
     "**/.terraform": true,
-    "**/node_modules": true,
-    "**/dist": true
+    "**/__pycache__": true,
+    "**/.venv": true
   },
 
-  "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true
-  },
-  "[typescriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true
+  "python.defaultInterpreterPath": "${workspaceFolder}/functions/fn-ingest-jobs/.venv/bin/python",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/functions/fn-ingest-jobs"
+  ],
+
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
