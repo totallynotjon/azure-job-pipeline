@@ -1,7 +1,6 @@
-*.ts
-src/
-tsconfig.json
-.gitignore
 .git
+.venv
 local.settings.json
-*.map
+__pycache__
+tests/
+*.pyc
