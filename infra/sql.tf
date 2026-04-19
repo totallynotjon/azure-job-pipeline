@@ -1,5 +1,5 @@
 resource "azurerm_mssql_server" "main" {
-  name                         = "sql-jonjobpipeline"
+  name                         = "sql-jonsjobpipeline"
   resource_group_name          = azurerm_resource_group.main.name
   location                     = var.sql_location
   version                      = "12.0"
