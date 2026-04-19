@@ -23,12 +23,13 @@ resource "azurerm_linux_function_app" "ingest" {
 
   site_config {
     application_stack {
-      node_version = "22"
+      python_version = "3.12"
     }
   }
 
   app_settings = {
-    "FUNCTIONS_WORKER_RUNTIME"              = "node"
+    "FUNCTIONS_WORKER_RUNTIME"              = "python"
+    "AzureWebJobsFeatureFlags"              = "EnableWorkerIndexing"
     "APPLICATIONINSIGHTS_CONNECTION_STRING" = azurerm_application_insights.main.connection_string
     "ADZUNA_APP_ID"                         = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=adzuna-id)"
     "ADZUNA_APP_KEY"                        = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=adzuna-key)"
