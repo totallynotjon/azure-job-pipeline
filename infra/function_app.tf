@@ -25,28 +25,35 @@ resource "azurerm_linux_function_app" "ingest" {
     application_stack {
       python_version = "3.12"
     }
+
+    # First-class App Insights wiring. The provider sets
+    # APPLICATIONINSIGHTS_CONNECTION_STRING + the hidden-link tag for us, so
+    # neither needs to be managed via app_settings / tags directly.
+    application_insights_connection_string = azurerm_application_insights.main.connection_string
   }
 
   app_settings = {
-    "FUNCTIONS_WORKER_RUNTIME"              = "python"
-    "AzureWebJobsFeatureFlags"              = "EnableWorkerIndexing"
-    "APPLICATIONINSIGHTS_CONNECTION_STRING" = azurerm_application_insights.main.connection_string
-    "ADZUNA_APP_ID"                         = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=adzuna-id)"
-    "ADZUNA_APP_KEY"                        = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=adzuna-key)"
-    "RAW_JOBS_STORAGE_ACCOUNT"              = azurerm_storage_account.main.name
-    "RAW_JOBS_CONTAINER"                    = azurerm_storage_container.raw_jobs.name
-    "ADZUNA_COUNTRY"                        = "us"
+    "FUNCTIONS_WORKER_RUNTIME" = "python"
+    "AzureWebJobsFeatureFlags" = "EnableWorkerIndexing"
+    "ADZUNA_APP_ID"            = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=adzuna-id)"
+    "ADZUNA_APP_KEY"           = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=adzuna-key)"
+    "RAW_JOBS_STORAGE_ACCOUNT" = azurerm_storage_account.main.name
+    "RAW_JOBS_CONTAINER"       = azurerm_storage_container.raw_jobs.name
+    "ADZUNA_COUNTRY"           = "us"
     "ADZUNA_SEARCHES" = jsonencode([
       { id = "remote", what = "devops engineer remote", where = "", maxDaysOld = 7 },
       { id = "REDACTED", what = "devops engineer", where = "REDACTED", maxDaysOld = 7 },
     ])
   }
 
-  # Set by the Functions Deploy workflow (points to the uploaded zip).
-  # Terraform owns infra shape; CI/CD owns the code-artifact pointer.
+  # Settings set by the Functions Deploy workflow, not by us:
+  #   - WEBSITE_RUN_FROM_PACKAGE: SAS URL pointing at the uploaded zip
+  #   - WEBSITE_ENABLE_SYNC_UPDATE_SITE: set by the deploy action
+  # Terraform owns infra shape; CI/CD owns deploy-artifact wiring.
   lifecycle {
     ignore_changes = [
       app_settings["WEBSITE_RUN_FROM_PACKAGE"],
+      app_settings["WEBSITE_ENABLE_SYNC_UPDATE_SITE"],
     ]
   }
 
