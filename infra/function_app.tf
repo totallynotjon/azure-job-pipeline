@@ -42,5 +42,13 @@ resource "azurerm_linux_function_app" "ingest" {
     ])
   }
 
+  # Set by the Functions Deploy workflow (points to the uploaded zip).
+  # Terraform owns infra shape; CI/CD owns the code-artifact pointer.
+  lifecycle {
+    ignore_changes = [
+      app_settings["WEBSITE_RUN_FROM_PACKAGE"],
+    ]
+  }
+
   tags = var.default_project_tags
 }
