@@ -24,9 +24,11 @@ def read_config():
     for i, s in enumerate(searches):
         if not isinstance(s, dict):
             raise ValueError(f"ADZUNA_SEARCHES[{i}] must be an object")
-        for key in ("id", "what", "where"):
+        for key in ("id", "what"):
             if key not in s or not isinstance(s[key], str):
                 raise ValueError(f"ADZUNA_SEARCHES[{i}].{key} must be a string")
+        if "where" in s and not isinstance(s["where"], str):
+            raise ValueError(f"ADZUNA_SEARCHES[{i}].where must be a string")
 
     return {
         "app_id": app_id,
