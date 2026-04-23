@@ -40,10 +40,7 @@ resource "azurerm_linux_function_app" "ingest" {
     "RAW_JOBS_STORAGE_ACCOUNT" = azurerm_storage_account.main.name
     "RAW_JOBS_CONTAINER"       = azurerm_storage_container.raw_jobs.name
     "ADZUNA_COUNTRY"           = "us"
-    "ADZUNA_SEARCHES" = jsonencode([
-      { id = "remote", what = "devops engineer remote", where = "", maxDaysOld = 7 },
-      { id = "REDACTED", what = "devops engineer", where = "REDACTED", maxDaysOld = 7 },
-    ])
+    "ADZUNA_SEARCHES"          = var.adzuna_searches
   }
 
   # Settings set by the Functions Deploy workflow, not by us:

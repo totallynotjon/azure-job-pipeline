@@ -37,3 +37,9 @@ variable "sql_admin_object_id" {
   description = "Entra object ID for the SQL server admin principal. Passed via TF_VAR_sql_admin_object_id (GH secret SQL_ADMIN_OBJECT_ID)."
   sensitive   = true
 }
+
+variable "adzuna_searches" {
+  type        = string
+  description = "JSON-encoded array of Adzuna search configs. Contains location PII, so it is kept out of source. Passed via TF_VAR_adzuna_searches (GH secret ADZUNA_SEARCHES). Example: [{\"id\":\"remote\",\"what\":\"devops engineer remote\",\"where\":\"\",\"maxDaysOld\":7}]"
+  sensitive   = true
+}
