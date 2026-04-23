@@ -28,9 +28,6 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
-        run: pip install --target .python_packages/lib/site-packages -r requirements.txt
-
       - name: Azure login (OIDC)
         uses: azure/login@v2
         with:
@@ -52,8 +49,11 @@ jobs:
           echo "Resolved Function App name: $name"
           echo "name=$name" >> "$GITHUB_OUTPUT"
 
-      - name: Deploy to Azure Functions
+      - name: Deploy to Azure Functions (Flex Consumption)
         uses: Azure/functions-action@v1
         with:
           app-name: ${{ steps.appname.outputs.name }}
           package: functions/fn-ingest-jobs
+          sku: flexconsumption
+          scm-do-build-during-deployment: true
+          enable-oryx-build: true
