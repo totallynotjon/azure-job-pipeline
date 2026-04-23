@@ -1,9 +1,9 @@
 resource "azurerm_mssql_server" "main" {
-  name                         = "sql-jonsjobpipeline"
-  resource_group_name          = azurerm_resource_group.main.name
-  location                     = var.sql_location
-  version                      = "12.0"
-  minimum_tls_version          = "1.2"
+  name                          = "sql-jonsjobpipeline"
+  resource_group_name           = azurerm_resource_group.main.name
+  location                      = var.sql_location
+  version                       = "12.0"
+  minimum_tls_version           = "1.2"
   public_network_access_enabled = true
 
   azuread_administrator {

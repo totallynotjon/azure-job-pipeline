@@ -15,7 +15,6 @@ CREATE TABLE [dbo].[Jobs] (
     [SalaryIsPredicted] BIT            NULL,
     [Description]       NVARCHAR(MAX)  NULL,
     [PostedAt]          DATETIME2(0)   NULL,
-    [SourceBlobPath]    NVARCHAR(500)  NOT NULL,
     [IngestedAt]        DATETIME2(3)   NOT NULL CONSTRAINT [DF_Jobs_IngestedAt] DEFAULT (SYSUTCDATETIME()),
     CONSTRAINT [PK_Jobs] PRIMARY KEY CLUSTERED ([Source], [SourceJobId])
 );

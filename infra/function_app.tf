@@ -38,8 +38,6 @@ resource "azurerm_function_app_flex_consumption" "ingest" {
     "AzureWebJobsStorage__accountName" = azurerm_storage_account.functions.name
     "ADZUNA_APP_ID"                    = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=adzuna-id)"
     "ADZUNA_APP_KEY"                   = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=adzuna-key)"
-    "RAW_JOBS_STORAGE_ACCOUNT"         = azurerm_storage_account.main.name
-    "RAW_JOBS_CONTAINER"               = azurerm_storage_container.raw_jobs.name
     "ADZUNA_COUNTRY"                   = "us"
     "ADZUNA_SEARCHES"                  = var.adzuna_searches
   }
