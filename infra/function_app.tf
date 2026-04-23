@@ -32,12 +32,25 @@ resource "azurerm_function_app_flex_consumption" "ingest" {
   app_settings = {
     "APPLICATIONINSIGHTS_CONNECTION_STRING" = azurerm_application_insights.main.connection_string
     "AzureWebJobsFeatureFlags"              = "EnableWorkerIndexing"
-    "ADZUNA_APP_ID"                         = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=adzuna-id)"
-    "ADZUNA_APP_KEY"                        = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=adzuna-key)"
-    "RAW_JOBS_STORAGE_ACCOUNT"              = azurerm_storage_account.main.name
-    "RAW_JOBS_CONTAINER"                    = azurerm_storage_container.raw_jobs.name
-    "ADZUNA_COUNTRY"                        = "us"
-    "ADZUNA_SEARCHES"                       = var.adzuna_searches
+    # Identity-based runtime storage for the Functions host. Pairs with the
+    # account-level Storage Blob Data Owner grant on stjonjobpipelinefn so the
+    # host can acquire its lock lease and manage azure-webjobs-* containers.
+    "AzureWebJobsStorage__accountName" = azurerm_storage_account.functions.name
+    "ADZUNA_APP_ID"                    = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=adzuna-id)"
+    "ADZUNA_APP_KEY"                   = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=adzuna-key)"
+    "RAW_JOBS_STORAGE_ACCOUNT"         = azurerm_storage_account.main.name
+    "RAW_JOBS_CONTAINER"               = azurerm_storage_container.raw_jobs.name
+    "ADZUNA_COUNTRY"                   = "us"
+    "ADZUNA_SEARCHES"                  = var.adzuna_searches
+  }
+
+  # Flex auto-injects a broken keyless AzureWebJobsStorage connection string on
+  # create; we override auth via AzureWebJobsStorage__accountName above and
+  # leave the platform-managed key alone so TF doesn't fight it.
+  lifecycle {
+    ignore_changes = [
+      app_settings["AzureWebJobsStorage"],
+    ]
   }
 
   tags = var.default_project_tags

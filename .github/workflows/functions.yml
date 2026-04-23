@@ -28,6 +28,9 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Install dependencies
+        run: pip install --target .python_packages/lib/site-packages -r requirements.txt
+
       - name: Azure login (OIDC)
         uses: azure/login@v2
         with:
@@ -55,5 +58,3 @@ jobs:
           app-name: ${{ steps.appname.outputs.name }}
           package: functions/fn-ingest-jobs
           sku: flexconsumption
-          scm-do-build-during-deployment: true
-          enable-oryx-build: true

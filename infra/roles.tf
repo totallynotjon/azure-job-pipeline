@@ -16,11 +16,12 @@ resource "azurerm_role_assignment" "fn_ingest_kv_read" {
   principal_id         = azurerm_function_app_flex_consumption.ingest.identity[0].principal_id
 }
 
-# Flex Consumption deployment: the platform reads/writes the app package blob
-# under the MI. Owner (not Contributor) is required for the overwrite semantics
-# used by one-deploy.
-resource "azurerm_role_assignment" "fn_ingest_deployment_container" {
-  scope                = azurerm_storage_container.fn_deployment.resource_manager_id
+# Flex runtime + deployment storage. The Functions host uses this account for
+# host locks (azure-webjobs-hosts), secrets cache (azure-webjobs-secrets), and
+# the deployment package container. Account-level Storage Blob Data Owner
+# covers all three; anything narrower breaks runtime coordination.
+resource "azurerm_role_assignment" "fn_ingest_functions_storage" {
+  scope                = azurerm_storage_account.functions.id
   role_definition_name = "Storage Blob Data Owner"
   principal_id         = azurerm_function_app_flex_consumption.ingest.identity[0].principal_id
 }
