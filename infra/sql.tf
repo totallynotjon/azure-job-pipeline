@@ -12,6 +12,16 @@ resource "azurerm_mssql_server" "main" {
     azuread_authentication_only = true
   }
 
+  # System-assigned MI is required for the server to call Microsoft Graph
+  # and resolve Entra principal names during CREATE USER FROM EXTERNAL
+  # PROVIDER. The MI needs the Directory Readers Entra role granted
+  # manually (out-of-band, one-time) — we don't grant it via TF because
+  # doing so would require RoleManagement.ReadWrite.Directory on the
+  # deploy SP, which is too broad a permission.
+  identity {
+    type = "SystemAssigned"
+  }
+
   tags = var.default_project_tags
 }
 
