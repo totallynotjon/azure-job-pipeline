@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 
 import azure.durable_functions as df
 import azure.functions as func
-import pyodbc
 
 from adzuna import fetch_adzuna
 from config import read_config
@@ -143,6 +142,12 @@ WHEN NOT MATCHED THEN
 
 @app.activity_trigger(input_name="job")
 def persist_to_sql(job: dict) -> dict:
+    # Lazy import: pyodbc's C extension needs libodbc.so.2 at load time.
+    # Keeping it out of module scope so worker indexing doesn't fail if the
+    # Flex Consumption image doesn't ship unixODBC — the other functions
+    # still register, and an ImportError here surfaces cleanly in logs.
+    import pyodbc
+
     if not SQL_SERVER or not SQL_DATABASE:
         raise RuntimeError("SQL_SERVER and SQL_DATABASE env vars must be set")
 
