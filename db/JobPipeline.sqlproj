@@ -10,9 +10,5 @@
   <ItemGroup>
     <Build Remove="PreDeploy.sql" />
     <PreDeploy Include="PreDeploy.sql" />
-    <!-- Bootstrap/ holds one-time setup scripts run manually by the human
-         admin; they are not part of DACPAC output. -->
-    <Build Remove="Bootstrap/**" />
-    <None Include="Bootstrap/**" />
   </ItemGroup>
 </Project>
