@@ -7,4 +7,8 @@
     <ModelCollation>1033, CI</ModelCollation>
     <ProjectGuid>{A1646772-CE36-4BA8-9B3D-934B2881BC5F}</ProjectGuid>
   </PropertyGroup>
+  <ItemGroup>
+    <Build Remove="PreDeploy.sql" />
+    <PreDeploy Include="PreDeploy.sql" />
+  </ItemGroup>
 </Project>

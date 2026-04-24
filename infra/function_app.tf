@@ -40,6 +40,8 @@ resource "azurerm_function_app_flex_consumption" "ingest" {
     "ADZUNA_APP_KEY"                   = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=adzuna-key)"
     "ADZUNA_COUNTRY"                   = "us"
     "ADZUNA_SEARCHES"                  = var.adzuna_searches
+    "SQL_SERVER"                       = azurerm_mssql_server.main.name
+    "SQL_DATABASE"                     = azurerm_mssql_database.main.name
   }
 
   # Flex auto-injects a broken keyless AzureWebJobsStorage connection string on
