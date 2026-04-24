@@ -1,13 +1,18 @@
 import logging
+import os
 from datetime import datetime, timezone
 
 import azure.durable_functions as df
 import azure.functions as func
+import pyodbc
 
 from adzuna import fetch_adzuna
 from config import read_config
 
 app = df.DFApp()
+
+SQL_SERVER = os.environ.get("SQL_SERVER")
+SQL_DATABASE = os.environ.get("SQL_DATABASE")
 
 
 # ---------- Client (timer) ----------
@@ -115,19 +120,78 @@ def filter_job(jobInput: dict) -> dict:
     return {"keep": True, "job": normalized}
 
 
+_MERGE_SQL = """
+MERGE dbo.Jobs AS target
+USING (VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)) AS src (
+    Source, SourceJobId, JobUrl, Title, CompanyName,
+    LocationDisplay, Latitude, Longitude, ContractType,
+    CategoryTag, CategoryLabel, SalaryMin, SalaryMax,
+    SalaryIsPredicted, Description, PostedAt
+)
+ON target.Source = src.Source AND target.SourceJobId = src.SourceJobId
+WHEN NOT MATCHED THEN
+    INSERT (Source, SourceJobId, JobUrl, Title, CompanyName,
+            LocationDisplay, Latitude, Longitude, ContractType,
+            CategoryTag, CategoryLabel, SalaryMin, SalaryMax,
+            SalaryIsPredicted, Description, PostedAt)
+    VALUES (src.Source, src.SourceJobId, src.JobUrl, src.Title, src.CompanyName,
+            src.LocationDisplay, src.Latitude, src.Longitude, src.ContractType,
+            src.CategoryTag, src.CategoryLabel, src.SalaryMin, src.SalaryMax,
+            src.SalaryIsPredicted, src.Description, src.PostedAt);
+"""
+
+
 @app.activity_trigger(input_name="job")
 def persist_to_sql(job: dict) -> dict:
-    # STUB: SQL MI access not wired yet (next PR). For now, log what we would have written.
+    if not SQL_SERVER or not SQL_DATABASE:
+        raise RuntimeError("SQL_SERVER and SQL_DATABASE env vars must be set")
+
+    posted_at = None
+    if job.get("posted_at"):
+        posted_at = datetime.fromisoformat(job["posted_at"].replace("Z", "+00:00"))
+
+    conn_str = (
+        "Driver={ODBC Driver 18 for SQL Server};"
+        f"Server=tcp:{SQL_SERVER}.database.windows.net,1433;"
+        f"Database={SQL_DATABASE};"
+        "Authentication=ActiveDirectoryManagedIdentity;"
+        "Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;"
+    )
+
+    params = (
+        job.get("source"),
+        job.get("source_job_id"),
+        job.get("job_url"),
+        job.get("title"),
+        job.get("company_name"),
+        job.get("location_display"),
+        job.get("latitude"),
+        job.get("longitude"),
+        job.get("contract_type"),
+        job.get("category_tag"),
+        job.get("category_label"),
+        job.get("salary_min"),
+        job.get("salary_max"),
+        job.get("salary_is_predicted"),
+        job.get("description"),
+        posted_at,
+    )
+
+    with pyodbc.connect(conn_str) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(_MERGE_SQL, params)
+            rows_affected = cursor.rowcount
+        conn.commit()
+
     logging.info(
-        "persist_to_sql stub",
+        "persist_to_sql merged",
         extra={"custom_dimensions": {
             "source": job.get("source"),
             "source_job_id": job.get("source_job_id"),
-            "title": job.get("title"),
-            "company": job.get("company_name"),
+            "inserted": rows_affected,
         }},
     )
-    return {"stub": True, "source_job_id": job.get("source_job_id")}
+    return {"source_job_id": job.get("source_job_id"), "inserted": rows_affected}
 
 
 # ---------- Helpers ----------
