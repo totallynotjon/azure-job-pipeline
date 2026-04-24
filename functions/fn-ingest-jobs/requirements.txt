@@ -1,5 +1,5 @@
 azure-functions
-azure-functions-durable
+azure-functions-durable==1.4.0
 azure-identity
 requests
 tenacity
