@@ -34,7 +34,7 @@ resource "azurerm_storage_account" "functions" {
 # Flex Consumption deployment container. Azure Functions unpacks the app package
 # here; the Function App's system-assigned MI needs Storage Blob Data Owner on it.
 resource "azurerm_storage_container" "fn_deployment" {
-  name                  = "app-package-fn-ingest-jobs"
+  name                  = "app-package-fn-pipeline"
   storage_account_id    = azurerm_storage_account.functions.id
   container_access_type = "private"
 }

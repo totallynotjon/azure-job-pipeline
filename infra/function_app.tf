@@ -9,7 +9,7 @@ resource "azurerm_service_plan" "main" {
 }
 
 resource "azurerm_function_app_flex_consumption" "ingest" {
-  name                = "fn-ingest-jobs-${random_string.kv_suffix.result}"
+  name                = "fn-pipeline-${random_string.kv_suffix.result}"
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   service_plan_id     = azurerm_service_plan.main.id

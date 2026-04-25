@@ -15,7 +15,7 @@ resource "azurerm_monitor_metric_alert" "ingest_repeated_failures" {
   name                = "alert-fn-ingest-failures"
   resource_group_name = azurerm_resource_group.main.name
   scopes              = [azurerm_application_insights.main.id]
-  description         = "Any function in fn-ingest-jobs app failed >=2 times in a 12h window"
+  description         = "Any function in fn-pipeline app failed >=2 times in a 12h window"
   severity            = 2
   frequency           = "PT1H"
   window_size         = "PT12H"
