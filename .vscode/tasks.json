@@ -4,9 +4,9 @@
     {
       "label": "pip install",
       "type": "shell",
-      "command": "${workspaceFolder}/functions/fn-ingest-jobs/.venv/bin/pip install -r requirements.txt",
+      "command": "${workspaceFolder}/functions/fn-pipeline/.venv/bin/pip install -r requirements.txt",
       "options": {
-        "cwd": "${workspaceFolder}/functions/fn-ingest-jobs"
+        "cwd": "${workspaceFolder}/functions/fn-pipeline"
       },
       "presentation": { "reveal": "silent", "panel": "dedicated" },
       "problemMatcher": []
@@ -14,9 +14,9 @@
     {
       "label": "pip install (production)",
       "type": "shell",
-      "command": "${workspaceFolder}/functions/fn-ingest-jobs/.venv/bin/pip install --target=.python_packages/lib/site-packages -r requirements.txt",
+      "command": "${workspaceFolder}/functions/fn-pipeline/.venv/bin/pip install --target=.python_packages/lib/site-packages -r requirements.txt",
       "options": {
-        "cwd": "${workspaceFolder}/functions/fn-ingest-jobs"
+        "cwd": "${workspaceFolder}/functions/fn-pipeline"
       },
       "presentation": { "reveal": "silent", "panel": "dedicated" },
       "problemMatcher": []
@@ -26,7 +26,7 @@
       "type": "shell",
       "command": "python3 -m venv .venv && .venv/bin/pip install -r requirements.txt",
       "options": {
-        "cwd": "${workspaceFolder}/functions/fn-ingest-jobs"
+        "cwd": "${workspaceFolder}/functions/fn-pipeline"
       },
       "presentation": { "reveal": "always", "panel": "dedicated" },
       "problemMatcher": []
@@ -54,7 +54,7 @@
       "isBackground": true,
       "dependsOn": "pip install",
       "options": {
-        "cwd": "${workspaceFolder}/functions/fn-ingest-jobs"
+        "cwd": "${workspaceFolder}/functions/fn-pipeline"
       }
     },
     {
@@ -64,7 +64,7 @@
       "problemMatcher": "$func-python-watch",
       "isBackground": true,
       "options": {
-        "cwd": "${workspaceFolder}/functions/fn-ingest-jobs"
+        "cwd": "${workspaceFolder}/functions/fn-pipeline"
       }
     },
     {

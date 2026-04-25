@@ -1,6 +1,6 @@
 {
-  "azureFunctions.projectSubpath": "functions/fn-ingest-jobs",
-  "azureFunctions.deploySubpath": "functions/fn-ingest-jobs",
+  "azureFunctions.projectSubpath": "functions/fn-pipeline",
+  "azureFunctions.deploySubpath": "functions/fn-pipeline",
   "azureFunctions.projectLanguage": "Python",
   "azureFunctions.projectRuntime": "~4",
   "azureFunctions.projectLanguageModel": 2,
@@ -23,9 +23,9 @@
     "**/.venv": true
   },
 
-  "python.defaultInterpreterPath": "${workspaceFolder}/functions/fn-ingest-jobs/.venv/bin/python",
+  "python.defaultInterpreterPath": "${workspaceFolder}/functions/fn-pipeline/.venv/bin/python",
   "python.analysis.extraPaths": [
-    "${workspaceFolder}/functions/fn-ingest-jobs"
+    "${workspaceFolder}/functions/fn-pipeline"
   ],
 
   "[python]": {
