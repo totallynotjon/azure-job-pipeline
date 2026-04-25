@@ -18,11 +18,7 @@
   },
   "extensions": {
     "durableTask": {
-      "hubName": "JobPipelineHub",
-      "storageProvider": {
-        "type": "azureStorage",
-        "connectionStringName": "AzureWebJobsStorage"
-      }
+      "hubName": "JobPipelineHub"
     }
   }
 }
