@@ -70,18 +70,22 @@ def filter_job(payload: dict) -> dict:
         return {"keep": False, "reason": "no url"}
 
     job = {
-        "source": payload.get("source"),
-        "source_id": str(raw.get("id", "")),
-        "title": title,
-        "company": raw.get("company", {}).get("display_name", ""),
-        "location": raw.get("location", {}).get("display_name", ""),
-        "url": url,
-        "description": description,
-        "salary_min": raw.get("salary_min"),
-        "salary_max": raw.get("salary_max"),
-        "posted_date": raw.get("created"),
-        "search_id": payload.get("searchId"),
-        "run_id": payload.get("runId"),
+        "Source": payload.get("source"),
+        "SourceJobId": str(raw.get("id", "")),
+        "JobUrl": url,
+        "Title": title,
+        "CompanyName": raw.get("company", {}).get("display_name"),
+        "LocationDisplay": raw.get("location", {}).get("display_name"),
+        "Latitude": raw.get("latitude"),
+        "Longitude": raw.get("longitude"),
+        "ContractType": raw.get("contract_type"),
+        "CategoryTag": raw.get("category", {}).get("tag"),
+        "CategoryLabel": raw.get("category", {}).get("label"),
+        "SalaryMin": raw.get("salary_min"),
+        "SalaryMax": raw.get("salary_max"),
+        "SalaryIsPredicted": raw.get("salary_is_predicted"),
+        "Description": description,
+        "PostedAt": raw.get("created"),
     }
     return {"keep": True, "job": job}
 
@@ -100,33 +104,39 @@ def persist_to_sql(job: dict) -> dict:
 
     merge_sql = """
     MERGE INTO dbo.Jobs AS target
-    USING (SELECT ? AS Url) AS source
-    ON target.Url = source.Url
+    USING (SELECT ? AS Source, ? AS SourceJobId) AS src
+    ON target.Source = src.Source AND target.SourceJobId = src.SourceJobId
     WHEN NOT MATCHED THEN INSERT (
-        Source, SourceId, Title, Company, Location, Url,
-        Description, SalaryMin, SalaryMax, PostedDate, SearchId, RunId
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        Source, SourceJobId, JobUrl, Title, CompanyName, LocationDisplay,
+        Latitude, Longitude, ContractType, CategoryTag, CategoryLabel,
+        SalaryMin, SalaryMax, SalaryIsPredicted, Description, PostedAt
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     """
 
-    with pyodbc.connect(conn_str, timeout=15) as conn:
+    with pyodbc.connect(conn_str, timeout=60) as conn:
         with conn.cursor() as cur:
             cur.execute(
                 merge_sql,
-                job["url"],
-                job["source"],
-                job["source_id"],
-                job["title"],
-                job["company"],
-                job["location"],
-                job["url"],
-                job["description"],
-                job["salary_min"],
-                job["salary_max"],
-                job["posted_date"],
-                job["search_id"],
-                job["run_id"],
+                job["Source"],
+                job["SourceJobId"],
+                job["Source"],
+                job["SourceJobId"],
+                job["JobUrl"],
+                job["Title"],
+                job["CompanyName"],
+                job["LocationDisplay"],
+                job["Latitude"],
+                job["Longitude"],
+                job["ContractType"],
+                job["CategoryTag"],
+                job["CategoryLabel"],
+                job["SalaryMin"],
+                job["SalaryMax"],
+                job["SalaryIsPredicted"],
+                job["Description"],
+                job["PostedAt"],
             )
             inserted = cur.rowcount
         conn.commit()
 
-    return {"url": job["url"], "inserted": inserted > 0}
+    return {"source": job["Source"], "source_job_id": job["SourceJobId"], "inserted": inserted > 0}
