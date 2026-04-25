@@ -10,6 +10,16 @@ resource "azurerm_role_assignment" "fn_ingest_kv_read" {
   principal_id         = azurerm_function_app_flex_consumption.ingest.identity[0].principal_id
 }
 
+# App Insights AAD auth requires the MI to publish metrics/traces. Paired
+# with the APPLICATIONINSIGHTS_AUTHENTICATION_STRING=Authorization=AAD app
+# setting so telemetry uses MI instead of connection-string auth (the latter
+# is on Microsoft's deprecation path).
+resource "azurerm_role_assignment" "fn_ingest_appinsights_publish" {
+  scope                = azurerm_application_insights.main.id
+  role_definition_name = "Monitoring Metrics Publisher"
+  principal_id         = azurerm_function_app_flex_consumption.ingest.identity[0].principal_id
+}
+
 # Flex runtime + deployment storage. The Functions host uses this account for
 # host locks (azure-webjobs-hosts), secrets cache (azure-webjobs-secrets), and
 # the deployment package container. Account-level Storage Blob Data Owner
