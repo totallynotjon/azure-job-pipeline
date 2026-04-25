@@ -1,6 +1,1 @@
 azure-functions
-azure-functions-durable==1.4.0
-azure-identity
-pyodbc
-requests
-tenacity
