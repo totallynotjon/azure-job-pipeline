@@ -33,14 +33,11 @@ resource "azurerm_mssql_firewall_rule" "allow_azure_services" {
 }
 
 resource "azurerm_mssql_database" "main" {
-  name                        = "sqldb-jobpipeline"
-  server_id                   = azurerm_mssql_server.main.id
-  sku_name                    = "GP_S_Gen5_1"
-  min_capacity                = 0.5
-  auto_pause_delay_in_minutes = 15
-  max_size_gb                 = 2
-  collation                   = "SQL_Latin1_General_CP1_CI_AS"
-  zone_redundant              = false
+  name        = "sqldb-jobpipeline"
+  server_id   = azurerm_mssql_server.main.id
+  sku_name    = "Basic"
+  max_size_gb = 2
+  collation   = "SQL_Latin1_General_CP1_CI_AS"
 
   tags = var.default_project_tags
 }
